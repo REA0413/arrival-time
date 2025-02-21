@@ -1,27 +1,41 @@
+# This is the name of our workflow that appears in GitHub Actions
 name: Flight Data Scraper
 
+# This section defines when this workflow should run
 on:
+  # It will run when we trigger it manually from our website
   repository_dispatch:
     types: [trigger-scrape]
+  # It will also run when we click "Run workflow" button in GitHub
   workflow_dispatch:
 
+# This section defines what the workflow should do
 jobs:
+  # We have one job called "scrape"
   scrape:
+    # This job runs on Ubuntu (a type of Linux)
     runs-on: ubuntu-latest
+    
+    # These are the steps our job will perform, in order
     steps:
+      # Step 1: Get our code from GitHub
       - uses: actions/checkout@v3
       
+      # Step 2: Install Node.js version 18
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          
+      
+      # Step 3: Install puppeteer (our web scraping tool)
       - name: Install dependencies
         run: |
-          cd flight-tracker
-          npm install
-          
+          npm install puppeteer
+      
+      # Step 4: Run our scraping script
       - name: Run scraper
         run: |
-          cd flight-tracker
-          node scripts/scrape.js 
+          node scripts/scrape.js
+        # Give Node.js more memory to work with
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096' 

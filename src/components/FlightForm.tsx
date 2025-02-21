@@ -26,9 +26,16 @@ export default function FlightForm({ onSearch }: FlightFormProps) {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value
+    
+    // If this is the flight number field, convert to uppercase and remove spaces
+    if (e.target.name === 'flightNumber') {
+      value = value.toUpperCase().replace(/\s+/g, '')
+    }
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     })
   }
 
