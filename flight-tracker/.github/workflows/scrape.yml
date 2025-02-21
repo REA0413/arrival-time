@@ -1,0 +1,27 @@
+name: Flight Data Scraper
+
+on:
+  repository_dispatch:
+    types: [trigger-scrape]
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: |
+          cd flight-tracker
+          npm install
+          
+      - name: Run scraper
+        run: |
+          cd flight-tracker
+          node scripts/scrape.js 
