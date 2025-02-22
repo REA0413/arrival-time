@@ -10,33 +10,43 @@ async function scrapeFlights() {
       '--disable-gpu',
       '--no-first-run',
       '--no-zygote',
-      '--single-process'
+      '--single-process',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins,site-per-process'
     ]
   });
 
   try {
     const page = await browser.newPage();
     
-    // Set timeouts to 60 seconds so the script doesn't give up too quickly
-    await page.setDefaultNavigationTimeout(60000);
-    await page.setDefaultTimeout(60000);
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     
-    // Set the browser window size
+    await page.setDefaultNavigationTimeout(120000);
+    await page.setDefaultTimeout(120000);
+    
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Tell us what's happening
     console.log('Navigating to website...');
-    // Go to the airport website
-    await page.goto('https://soekarnohatta-airport.co.id/fids?type_data=A', {
-      waitUntil: 'networkidle2',  // Wait until the page is mostly loaded
-      timeout: 60000
-    });
+    
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await page.goto('https://soekarnohatta-airport.co.id/fids?type_data=A', {
+          waitUntil: 'networkidle2',
+          timeout: 120000
+        });
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+        console.log(`Retrying... ${retries} attempts left`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
 
-    // Wait for the flight table to appear
     console.log('Waiting for table...');
-    await page.waitForSelector('#tablefids');
+    await page.waitForSelector('#tablefids', { timeout: 120000 });
 
-    // Change the number of entries shown to 750
     console.log('Changing entries to 750...');
     await page.evaluate(() => {
       const select = document.querySelector('#tablefids_length > label > select');
@@ -46,15 +56,11 @@ async function scrapeFlights() {
       }
     });
 
-    // Wait 3 seconds for the table to update
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Get all the flight data from the table
     console.log('Extracting flight data...');
     const flightData = await page.evaluate(() => {
-      // Find all rows in the table
       const rows = Array.from(document.querySelectorAll('#tablefids tbody tr'));
-      // For each row, get the flight information
       return rows.map(row => {
         const cells = Array.from(row.querySelectorAll('td'));
         return {
@@ -68,16 +74,13 @@ async function scrapeFlights() {
       });
     });
 
-    // Tell us it worked and show the data
     console.log('Flight data extracted successfully');
     console.log(flightData);
 
   } catch (error) {
-    // If anything goes wrong, tell us about it
     console.error('Error during scraping:', error);
     throw error;
   } finally {
-    // Always close the browser when we're done
     await browser.close();
   }
 }
